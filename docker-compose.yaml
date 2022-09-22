@@ -1,0 +1,18 @@
+version: "3.7"
+
+
+services:
+  # contract-gateaway:
+  #   container_name: contract-gateaway
+  #   build: ./contract-gateaway
+  #   ports:
+  #     - "8000:8000"
+
+  bot:
+    container_name: bot
+    build: ./bot
+    volumes:
+      - ./bot/src:/bot/src/
+    env_file:
+      - .env
+    command: python -m src
