@@ -113,21 +113,22 @@ async def track(ctx: vq.NewMessage):
     for network in w3s:
         positions = PositionData.fetch_positions(
             address=USERS[str(ctx.msg.from_id)]["address"],
-            contract=network.provider.eth.contract(
+            contract=network.provider.eth.contract(  # noqa
                 "0xC36442b4a4522E871399CD717aBDD847Ab11FE88",  # position manager
                 abi=position_abi,
             ),
         )
 
-        message += f"\n\nNetwork: {network.network}"
         positions = [pos for pos in positions if pos.liquidity > 0]
+        if positions:
+            message += f"\n\nNetwork: {network.network}"
         for position in positions:
             message += f"\n-> Position: {position.id}"
 
             token0 = Token.fetch(address=position.token0, w3=network.provider)
             token1 = Token.fetch(address=position.token1, w3=network.provider)
 
-            factory_contract = network.provider.eth.contract(
+            factory_contract = network.provider.eth.contract(  # noqa
                 "0x1F98431c8aD98523631AE4a59f267346ea31F984", abi=factory_abi  # factory
             )
             pool_address = factory_contract.functions.getPool(
@@ -233,6 +234,7 @@ async def track(ctx: vq.NewMessage):
         message += f"\n{key}: {value:.5f}"
 
     kb = vq.Keyboard(
-        vq.Button.text("Tracker").primary().on_click(track)
+        vq.Button.text("Tracker").primary().on_click(track),
+        one_time=False
     )
     await in_progress.edit(message, keyboard=kb)
