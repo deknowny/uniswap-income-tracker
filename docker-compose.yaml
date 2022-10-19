@@ -2,17 +2,13 @@ version: "3.7"
 
 
 services:
-  # contract-gateaway:
-  #   container_name: contract-gateaway
-  #   build: ./contract-gateaway
-  #   ports:
-  #     - "8000:8000"
-
   bot:
     container_name: bot
     build: ./bot
     volumes:
       - ./bot/src:/bot/src/
-    env_file:
-      - .env
+    environment:
+      - VK_BOT_GROUP_TOKEN
+      - L1_RPC_URL
+      - ARBITRUM_RPC_URL
     command: python -m src

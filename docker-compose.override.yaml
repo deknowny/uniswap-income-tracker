@@ -1,0 +1,7 @@
+version: "3.7"
+
+
+services:
+  bot:
+    environment:
+      - VK_BOT_GROUP_TOKEN=${VK_TEST_BOT_GROUP_TOKEN}
