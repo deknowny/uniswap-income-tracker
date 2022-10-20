@@ -40,5 +40,4 @@ async def calc_amount_in_usd(
         * (10**erc20_token0.decimals / 10**erc20_token1.decimals)
         / 2**192
     )
-    loguru.logger.info(str((erc20_token0, erc20_token1, price0, sqrt_price_x96, )))
     return price0 * amount

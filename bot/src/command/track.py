@@ -76,7 +76,9 @@ async def track(ctx: vq.NewMessage):
 
     position_reports = []
     for network in w3s:
-        total_balance_in_usd += await network.fetch_assets_balance_in_usd(account_address)
+        total_balance_in_usd_task = asyncio.create_task(
+            network.fetch_assets_balance_in_usd(account_address)
+        )
         positions = await Position.fetch_all(network, account_address)
         for position in positions:
             if position.liquidity > 0:
@@ -110,6 +112,8 @@ async def track(ctx: vq.NewMessage):
                     + own_liquidity.token1_usd,
                 )
                 position_reports.append(position_report)
+
+        total_balance_in_usd += await total_balance_in_usd_task
 
     report = TrackingReport(
         positions=position_reports,
