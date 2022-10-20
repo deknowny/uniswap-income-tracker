@@ -6,3 +6,6 @@ run-prod:
 
 build:
 	docker-compose --env-file=secrets/.env build --no-cache
+
+format-bot:
+	black bot/src
