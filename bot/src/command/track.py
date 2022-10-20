@@ -1,6 +1,7 @@
 import asyncio
 import dataclasses
 
+import loguru
 import vkquick as vq
 
 
@@ -32,7 +33,9 @@ class PositionReport:
         message = f"[ {self.network} ({self.nft_token_id}) ] "
         message += f"\n-> Pair: {self.token0_symbol}/{self.token1_symbol}"
         message += f"\n-> Price: {self.price0:.7f}/{self.price1:.7f}"
-        message += f"\n-> Liquidity: {self.liquidity0_amount:.5f}/{self.liquidity1_amount:.5f}"
+        message += (
+            f"\n-> Liquidity: {self.liquidity0_amount:.5f}/{self.liquidity1_amount:.5f}"
+        )
         message += f"\n-> Fees: {self.fee0_amount:.5f}/{self.fee1_amount:.5f}"
         message += f"\n-> $ Liquidity: ${self.liquidity_in_usd:.2f}"
         message += f"\n-> $ Fees: ${self.fee_in_usd:.2f}"
@@ -49,17 +52,15 @@ class TrackingReport:
     total_locked_in_usd: float
     total_awaited_in_usd: float
     total_balance_in_usd: float
-    total_in_usd: float
 
     def render(self) -> str:
         message = "\n\n".join(pos.render() for pos in self.positions)
-
         message += "\n\n[ TOTAL ]"
         message += f"\n--> $ Fees: ${self.total_fee_in_usd:.2f}"
         message += f"\n--> $ Locked: ${self.total_locked_in_usd:.2f}"
         message += f"\n--> $ Awaited: ${self.total_awaited_in_usd:.2f}"
         message += f"\n--> $ Balance: ${self.total_balance_in_usd:.2f}"
-        message += f"\n--> $ Total: ${self.total_in_usd:.2f}"
+        message += f"\n--> $ Total: ${self.total_awaited_in_usd + self.total_balance_in_usd:.2f}"
 
         return message
 
@@ -67,26 +68,28 @@ class TrackingReport:
 @pkg.on_clicked_button()
 @pkg.command("track")
 async def track(ctx: vq.NewMessage):
-    in_progress = await ctx.reply("Fetch...")
+    in_progress = await ctx.reply("Fetching...")
     account_address = USERS[str(ctx.msg.from_id)]["address"]
     total_fee_in_usd = 0
     total_locked_in_usd = 0
     total_balance_in_usd = 0
-    total_in_usd = 0
 
     position_reports = []
     for network in w3s:
-        positions = await Position.fetch_all(network.provider, account_address)
+        total_balance_in_usd += await network.fetch_assets_balance_in_usd(account_address)
+        positions = await Position.fetch_all(network, account_address)
         for position in positions:
             if position.liquidity > 0:
                 fees, prices, own_liquidity, tokens = await asyncio.gather(
-                    position.calc_fees(network.provider),
-                    position.calc_prices(network.provider),
-                    position.calc_own_liquidity(network.provider),
-                    position.fetch_tokens(network.provider)
+                    position.calc_fees(network),
+                    position.calc_prices(network),
+                    position.calc_own_liquidity(network),
+                    position.fetch_tokens(network),
                 )
                 total_fee_in_usd += fees.token0_usd + fees.token1_usd
-                total_locked_in_usd += own_liquidity.token0_usd + own_liquidity.token1_usd
+                total_locked_in_usd += (
+                    own_liquidity.token0_usd + own_liquidity.token1_usd
+                )
                 position_report = PositionReport(
                     nft_token_id=position.self_nft_token,
                     network=network.network,
@@ -96,11 +99,15 @@ async def track(ctx: vq.NewMessage):
                     price1=prices.token1,
                     liquidity0_amount=own_liquidity.token0,
                     liquidity1_amount=own_liquidity.token1,
-                    liquidity_in_usd=own_liquidity.token0_usd + own_liquidity.token1_usd,
+                    liquidity_in_usd=own_liquidity.token0_usd
+                    + own_liquidity.token1_usd,
                     fee0_amount=fees.token0,
                     fee1_amount=fees.token1,
                     fee_in_usd=fees.token0_usd + fees.token1_usd,
-                    total_usd=fees.token0_usd + fees.token1_usd + own_liquidity.token0_usd + own_liquidity.token1_usd
+                    total_usd=fees.token0_usd
+                    + fees.token1_usd
+                    + own_liquidity.token0_usd
+                    + own_liquidity.token1_usd,
                 )
                 position_reports.append(position_report)
 
@@ -110,8 +117,6 @@ async def track(ctx: vq.NewMessage):
         total_locked_in_usd=total_locked_in_usd,
         total_balance_in_usd=total_balance_in_usd,
         total_awaited_in_usd=total_fee_in_usd + total_locked_in_usd,
-        total_in_usd=total_in_usd,
-
     )
 
     kb = vq.Keyboard(

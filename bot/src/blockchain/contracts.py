@@ -40,10 +40,12 @@ class _IStaticConnectedContract(_IConnectedContract, abc.ABC):
     def static_connect(cls: typing.Type[Cls], w3: web3.Web3) -> Cls:
         address = cls._get_address()
         return cls(
-            w3=w3, address=address, contract=w3.eth.contract(
+            w3=w3,
+            address=address,
+            contract=w3.eth.contract(
                 src.blockchain.to_address.to_address(address),
                 abi=cls._get_abi(),
-            )
+            ),
         )
 
     @classmethod
