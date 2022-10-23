@@ -7,6 +7,7 @@ services:
     build: ./bot
     volumes:
       - ./bot/src:/bot/src/
+      - ./secrets/users.json:/bot/users.json/
     environment:
       - VK_BOT_GROUP_TOKEN
       - L1_RPC_URL
