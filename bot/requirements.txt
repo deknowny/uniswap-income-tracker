@@ -1,4 +1,4 @@
 web3==6.0.0-beta.6
 starlette==0.21.0
 typing-extensions
-vkquick @ https://github.com/deknowny/vkquick/archive/1.0.zip
+vkquick @ https://github.com/deknowny/vkquick/archive/master.zip
